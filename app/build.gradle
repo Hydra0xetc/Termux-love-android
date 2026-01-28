@@ -1,13 +1,24 @@
-import java.nio.charset.StandardCharsets
-
 plugins {
     id 'com.android.application'
 }
 
 android {
     namespace "org.love2d.android"
-    ndkVersion '27.1.12297006'
+    ndkVersion '29.0.14206865'
 
+    androidResources {
+        additionalParameters "--aapt2", System.getenv("AAPT2") ?: ""
+    }
+
+    signingConfigs {
+        release {
+            storeFile file(System.getenv("KEYSTORE_FILE") ?: "")
+            storePassword System.getenv("KEYSTORE_PASSWORD") ?: ""
+            keyAlias System.getenv("KEY_ALIAS") ?: ""
+            keyPassword System.getenv("KEY_PASSWORD") ?: ""
+        }
+    }
+    
     defaultConfig {
         applicationId project.properties["app.application_id"]
         versionCode project.properties["app.version_code"].toInteger()
@@ -18,19 +29,17 @@ android {
 
         externalNativeBuild {
             cmake {
-                arguments "-DANDROID_STL=c++_shared", "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=1", "-DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON"
-                // https://issuetracker.google.com/issues/274493986
-                // Transitive shared library that's added through `add_dependencies` is not taken into
-                // account. This result in liboboe.so and libluajit.so not get included into the final
-                // APK. "love" target depends on LuaJIT, and "OpenAL" target depends on oboe::oboe
-                // (which provides liboboe.so). So, add "OpenAL" and "love" target.
+                arguments "-DANDROID_STL=c++_shared",
+                          "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=1",
+                          "-DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON",
+                          "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
                 targets "love_android", "OpenAL", "love"
             }
         }
 
         ndk {
             //noinspection ChromeOsAbiSupport
-            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
+            abiFilters 'armeabi-v7a', 'arm64-v8a'
             debugSymbolLevel 'full'
         }
 
@@ -48,7 +57,7 @@ android {
                 for (String s: nameArraySplit) {
                     nameBytes[count++] = (byte) Integer.parseInt(s)
                 }
-                return new String(nameBytes, StandardCharsets.UTF_8)
+                return new String(nameBytes, java.nio.charset.StandardCharsets.UTF_8)
             }
             return name
         }
@@ -98,6 +107,10 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Hanya gunakan signing jika environment variable tersedia
+            if (System.getenv("KEYSTORE_FILE") != null) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 
@@ -123,6 +136,7 @@ android {
 
     sourceSets {
         main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
             java {
                 srcDir 'src/main/cpp/megasource/libs/SDL3/android-project/app/src/main/java'
                 srcDir 'src/main/java'
@@ -147,11 +161,6 @@ android {
     externalNativeBuild {
         cmake {
             path file('src/main/cpp/CMakeLists.txt')
-            // '+' notation apparently has been supported long time ago
-            // https://issuetracker.google.com/issues/110693527#comment22
-            // We require CMake 3.21 because r23 has important fixes
-            // that's only fixed if CMake 3.21 is used.
-            // https://github.com/android/ndk/issues/463
             version '3.21.0+'
         }
     }
@@ -160,8 +169,6 @@ android {
             excludes += [
                 'lib/armeabi-v7a/libOpenSLES.so',
                 'lib/arm64-v8a/libOpenSLES.so',
-                'lib/x86/libOpenSLES.so',
-                'lib/x86_64/libOpenSLES.so'
             ]
         }
     }
@@ -178,7 +185,6 @@ dependencies {
     implementation 'com.google.oboe:oboe:1.9.3'
 }
 
-// We don't even use Kotlin. Why we have to care about it?
 configurations.implementation {
     exclude group: 'org.jetbrains.kotlin', module: 'kotlin-stdlib-jdk8'
 }
