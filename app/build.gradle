@@ -5,17 +5,22 @@ plugins {
 android {
     namespace "org.love2d.android"
     ndkVersion '29.0.14206865'
-
-    androidResources {
-        additionalParameters "--aapt2", System.getenv("AAPT2") ?: ""
-    }
+    compileSdk 35
 
     signingConfigs {
         release {
-            storeFile file(System.getenv("KEYSTORE_FILE") ?: "")
-            storePassword System.getenv("KEYSTORE_PASSWORD") ?: ""
-            keyAlias System.getenv("KEY_ALIAS") ?: ""
-            keyPassword System.getenv("KEY_PASSWORD") ?: ""
+            // Baca dari gradle.properties
+            def keyStoreFilePath = project.findProperty("KEYSTORE_FILE")
+            def keyStorePass = project.findProperty("KEYSTORE_PASSWORD")
+            def keyAliasName = project.findProperty("KEY_ALIAS")
+            def keyPass = project.findProperty("KEY_PASSWORD")
+            
+            if (keyStoreFilePath && keyStorePass && keyAliasName && keyPass) {
+                storeFile file(keyStoreFilePath)
+                storePassword keyStorePass
+                keyAlias keyAliasName
+                keyPassword keyPass
+            }
         }
     }
     
@@ -24,7 +29,6 @@ android {
         versionCode project.properties["app.version_code"].toInteger()
         versionName project.properties["app.version_name"]
         minSdk 23
-        compileSdk 35
         targetSdk 35
 
         externalNativeBuild {
@@ -32,7 +36,8 @@ android {
                 arguments "-DANDROID_STL=c++_shared",
                           "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=1",
                           "-DCMAKE_DISABLE_PRECOMPILE_HEADERS=ON",
-                          "-DCMAKE_POLICY_VERSION_MINIMUM=3.5"
+                          "-DCMAKE_POLICY_VERSION_MINIMUM=3.5",
+                          "-DCMAKE_BUILD_TYPE=Release"
                 targets "love_android", "OpenAL", "love"
             }
         }
@@ -107,8 +112,8 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            // Hanya gunakan signing jika environment variable tersedia
-            if (System.getenv("KEYSTORE_FILE") != null) {
+            
+            if (project.findProperty("KEYSTORE_FILE") != null) {
                 signingConfig signingConfigs.release
             }
         }
@@ -116,6 +121,7 @@ android {
 
     buildFeatures {
         prefab true
+        viewBinding true
     }
 
     flavorDimensions = ['mode', 'recording']
@@ -155,15 +161,14 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    buildFeatures {
-        viewBinding true
-    }
+    
     externalNativeBuild {
         cmake {
             path file('src/main/cpp/CMakeLists.txt')
             version '3.21.0+'
         }
     }
+    
     packagingOptions {
         jniLibs {
             excludes += [
