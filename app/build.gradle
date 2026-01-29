@@ -9,7 +9,6 @@ android {
 
     signingConfigs {
         release {
-            // Baca dari gradle.properties
             def keyStoreFilePath = project.findProperty("KEYSTORE_FILE")
             def keyStorePass = project.findProperty("KEYSTORE_PASSWORD")
             def keyAliasName = project.findProperty("KEY_ALIAS")

@@ -1,24 +1,67 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+############################################
+# GENERAL
+############################################
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+-keepattributes *Annotation*
+-keepattributes Signature
+-keepattributes InnerClasses
+-keepattributes EnclosingMethod
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+-dontoptimize
+-dontpreverify
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+############################################
+# ANDROID CORE
+############################################
 
--keep class org.love2d.android.GameActivity { *; }
--keep class org.libsdl.app.** { *; }
+# Keep Activity, Service, Receiver, Provider
+-keep class * extends android.app.Activity
+-keep class * extends android.app.Service
+-keep class * extends android.content.BroadcastReceiver
+-keep class * extends android.content.ContentProvider
+
+# Keep Application class
+-keep class * extends android.app.Application
+
+############################################
+# VIEW / XML
+############################################
+
+-keepclassmembers class * {
+    public <init>(android.content.Context);
+    public <init>(android.content.Context, android.util.AttributeSet);
+    public <init>(android.content.Context, android.util.AttributeSet, int);
+}
+
+############################################
+# RESOURCE / R CLASS
+############################################
+
+# Jangan hapus R class
+-keep class **.R
+-keep class **.R$*
+
+############################################
+# SERIALIZATION / REFLECTION
+############################################
+
+# Kalau pakai Serializable
+-keepclassmembers class * implements java.io.Serializable {
+    static final long serialVersionUID;
+}
+
+############################################
+# LOGGING
+############################################
+
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+    public static *** i(...);
+}
+
+############################################
+# WARNING HANDLING
+############################################
+
+-dontwarn **
